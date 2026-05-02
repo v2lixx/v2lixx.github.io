@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seung Min Shin · Security Researcher</title>
+    <meta name="description" content="Seung Min Shin — Security Researcher. Vulnerability research with a current focus on Linux open-source packages and the kernel.">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>(function(){try{var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);var c=localStorage.getItem('crt');if(c==='on')document.documentElement.setAttribute('data-crt','on');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
+</head>
+<body>
+    <div class="scanline" aria-hidden="true"></div>
+    <div class="noise" aria-hidden="true"></div>
+
+    <nav class="nav">
+        <div class="wrap">
+            <div class="nav-brand"><a href="#top">v2lixx<span class="cursor">_</span></a></div>
+            <ul class="nav-links">
+                <li><a href="#about">about</a></li>
+                <li><a href="#vulns">vulns</a></li>
+                <li><a href="#contact">contact</a></li>
+                <li><button class="toggle-btn" id="crt-toggle" aria-label="Toggle CRT scanline">crt</button></li>
+                <li><button class="toggle-btn" id="theme-toggle" aria-label="Toggle theme">dark</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header class="intro" id="top">
+        <div class="wrap">
+            <div class="terminal-prompt">
+                <span class="prompt-user">v2lixx</span><span class="prompt-at">@</span><span class="prompt-host">ubuntu</span><span class="prompt-colon">:</span><span class="prompt-path">~</span><span class="prompt-dollar">$</span>
+                <span class="prompt-cmd">whoami</span>
+            </div>
+            <div class="intro-row">
+                <div class="avatar">
+                    <img src="profile.jpg" alt="Seung Min Shin">
+                </div>
+                <div class="intro-text">
+                    <h1 class="glitch" data-text="Seung Min Shin">Seung Min Shin</h1>
+                    <p class="tagline">Security Researcher · Vulnerability Research</p>
+                    <p class="bio">
+                        Undergraduate security researcher with a broad interest in low-level systems
+                        and memory safety. My current focus is vulnerability research in Linux
+                        open-source packages and the kernel. Currently studying Cyber Security at
+                        <a href="https://www.ajou.ac.kr/" target="_blank" rel="noopener">Ajou University</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="block" id="about">
+        <div class="wrap">
+            <h2 class="section-heading"><span class="head-prompt">$</span> cat about.md</h2>
+            <div class="entries">
+                <div class="entry">
+                    <div class="when">2025 — now</div>
+                    <div class="what">
+                        <h3>B.S. in Cyber Security</h3>
+                        <p class="where">Ajou University · Suwon, Korea</p>
+                        <p>Undergraduate. Building up the fundamentals while getting my hands dirty in real-world targets on the side.</p>
+                    </div>
+                </div>
+                <div class="entry">
+                    <div class="when">focus</div>
+                    <div class="what">
+                        <h3>What I work on</h3>
+                        <p>Vulnerability research, with a current focus on Linux open-source packages and the kernel.
+                            Day-to-day work centers on source auditing, fuzzing, and reading a lot of upstream code.
+                            Open to broadening into adjacent areas as I gain experience.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="block" id="vulns">
+        <div class="wrap">
+            <h2 class="section-heading"><span class="head-prompt">$</span> ls vulnerabilities/</h2>
+            <p class="page-sub">Public disclosures, grouped by upstream. Newest reports near the top.</p>
+
+            <div class="timeline">
+
+                <div class="vendor-block" id="ffmpeg">
+                    <h3 class="vendor-name">FFmpeg</h3>
+                    <p class="vendor-desc">Cross-platform multimedia framework.</p>
+                    <ul class="vuln-list">
+                        <li>
+                            <div class="vuln-meta">
+                                <span class="cve">CVE pending</span>
+                                <span class="sev medium">Medium</span>
+                            </div>
+                            <div class="vuln-body">
+                                <h4 class="vuln-title">libavcodec/zmbv: heap buffer over-read in <code>zmbv_decode_xor_32</code></h4>
+                                <p class="vuln-desc"><code>zmbv_decode_xor_32()</code>'s size check covers only the motion-vector table, not the trailing XOR pixel data; with all-<code>d=1</code> vectors and frames ≥ 800×600 (32bpp), per-block reads run past <code>decomp_buf</code> and the leaked heap bytes get XOR'd into the output — heap over-read with disclosure into rendered video.</p>
+                                <p class="vuln-meta-row">
+                                    <a class="vuln-link" href="https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls/22995" target="_blank" rel="noopener">PR #22995 ↗</a>
+                                </p>
+                            </div>
+                        </li>
+
+                        <li>
+                            <div class="vuln-meta">
+                                <span class="cve">CVE pending</span>
+                                <span class="sev medium">Medium</span>
+                            </div>
+                            <div class="vuln-body">
+                                <h4 class="vuln-title">avformat/rtspdec: reject non-positive ANNOUNCE Content-Length</h4>
+                                <p class="vuln-desc">In RTSP listen mode, an oversized <code>Content-Length</code> wrapped to <code>-1</code> after being parsed as <code>int</code>; the path then fell through to <code>av_malloc(0)</code>'s 1-byte fallback and wrote a NUL at <code>sdp[-1]</code> — a 1-byte heap-buffer-underflow.</p>
+                                <p class="vuln-meta-row">
+                                    <a class="vuln-link" href="https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls/22902" target="_blank" rel="noopener">PR #22902 ↗</a>
+                                </p>
+                            </div>
+                        </li>
+
+                        <li>
+                            <div class="vuln-meta">
+                                <span class="cve">CVE pending</span>
+                                <span class="sev high">High</span>
+                            </div>
+                            <div class="vuln-body">
+                                <h4 class="vuln-title">libavcodec/rasc: heap use-after-free in the RASC decoder</h4>
+                                <p class="vuln-desc">In <code>decode_move()</code>, a <code>GetByteContext</code> indexes into <code>s->delta</code>; a type-0 move replaces that buffer via <code>av_fast_padded_malloc</code>, so subsequent loop iterations read move-table fields out of the freed region — heap UAF read of attacker-controlled bytes.</p>
+                                <p class="vuln-meta-row">
+                                    <a class="vuln-link" href="https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls/22992" target="_blank" rel="noopener">PR #22992 ↗</a>
+                                </p>
+                            </div>
+                        </li>
+
+                        <li>
+                            <div class="vuln-meta">
+                                <span class="cve">CVE pending</span>
+                                <span class="sev high">High</span>
+                            </div>
+                            <div class="vuln-body">
+                                <h4 class="vuln-title">libavcodec/tdsc: heap buffer overflow in <code>tdsc_load_cursor</code></h4>
+                                <p class="vuln-desc"><code>tdsc_load_cursor()</code>'s <code>CUR_FMT_MONO</code> branch carried over a stride adjustment from the BGRA path, but the MONO inner loop already advances <code>dst</code> by a full <code>cursor_stride</code>; for non-32-aligned <code>cursor_w</code> the extra adjustment makes <code>dst</code> drift past the allocation each row — heap OOB write.</p>
+                                <p class="vuln-meta-row">
+                                    <a class="vuln-link" href="https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls/22994" target="_blank" rel="noopener">PR #22994 ↗</a>
+                                </p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="vendor-block" id="libpng">
+                    <h3 class="vendor-name">libpng</h3>
+                    <p class="vendor-desc">Reference PNG library used by virtually everything that touches PNG/APNG.</p>
+                    <ul class="vuln-list">
+                        <li>
+                            <div class="vuln-meta">
+                                <span class="cve"><a href="https://www.cve.org/CVERecord?id=CVE-2026-40930" target="_blank" rel="noopener">CVE-2026-40930</a></span>
+                                <span class="sev medium">Medium</span>
+                            </div>
+                            <div class="vuln-body">
+                                <h4 class="vuln-title">Chunk smuggling in push-mode APNG parser via unconsumed chunk body</h4>
+                                <p class="vuln-desc">In push-mode APNG, <code>png_push_read_chunk()</code> cleared <code>PNG_HAVE_CHUNK_HEADER</code> on an ignored inter-frame chunk without consuming its body or CRC — so the next iteration re-read those unread bytes as a fresh <code>[length][type]</code>, letting a benign carrier (e.g. <code>tHRW</code>) smuggle a fake <code>fdAT</code> into the frame-data path.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="vendor-block" id="gstreamer">
+                    <h3 class="vendor-name">GStreamer</h3>
+                    <p class="vendor-desc">Pluggable multimedia framework shipped with most Linux desktops.</p>
+                    <ul class="vuln-list">
+                        <li>
+                            <div class="vuln-meta">
+                                <span class="cve">CVE pending</span>
+                                <span class="sev high">High</span>
+                            </div>
+                            <div class="vuln-body">
+                                <h4 class="vuln-title">gstwavpackdec: integer overflow → ~4 GB heap buffer overflow</h4>
+                                <p class="vuln-desc">32-bit size math <code>4 * block_samples * channels</code> in <code>gst_wavpack_dec_handle_frame()</code> wraps to a tiny <code>g_malloc</code>, then libwavpack's subsequent <code>memset</code> uses the un-truncated 64-bit value — a ~4 GB linear heap write. Reachable on the second frame, since the decoder skips header re-validation after context init.</p>
+                                <p class="vuln-meta-row">
+                                    <a class="vuln-link" href="https://gitlab.freedesktop.org/gstreamer/gstreamer/-/work_items/5069" target="_blank" rel="noopener">work item #5069 ↗</a>
+                                </p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="vendor-block" id="libzip">
+                    <h3 class="vendor-name">libzip</h3>
+                    <p class="vendor-desc">Library for reading, creating and modifying ZIP archives.</p>
+                    <ul class="vuln-list">
+                        <li>
+                            <div class="vuln-meta">
+                                <span class="cve">Credited</span>
+                            </div>
+                            <div class="vuln-body">
+                                <h4 class="vuln-title">Integer underflow in PKWARE-DCL <code>zip_source_stat</code></h4>
+                                <p class="vuln-desc"><code>pkware_decrypt()</code> subtracted the 12-byte PKWARE header from <code>comp_size</code> during <code>ZIP_SOURCE_STAT</code> without a lower-bound check; a crafted entry with <code>comp_size &lt; 12</code> underflowed and returned a wrapped near-<code>UINT64_MAX</code> size as trusted metadata. Reported with reproducer test cases that prompted the upstream fix; acknowledged in libzip's <code>THANKS</code> file.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="vendor-block" id="chromium">
+                    <h3 class="vendor-name">Chromium</h3>
+                    <p class="vendor-desc">Open-source web browser project (Chrome's upstream).</p>
+                    <ul class="vuln-list">
+                        <li>
+                            <div class="vuln-meta">
+                                <span class="cve">Credited</span>
+                            </div>
+                            <div class="vuln-body">
+                                <h4 class="vuln-title">Null pointer dereference in <code>SkStrike::glyphIDsToPaths</code></h4>
+                                <p class="vuln-desc"><code>SkStrike::glyphIDsToPaths</code> ignored <code>prepareForPath</code>'s return value, so a compromised renderer sending <code>readStrikeData</code> with <code>hasPath=false</code> could leave a glyph poisoned (sentinel set, path null) and then crash the GPU process by referencing it from a <code>DrawSlugOp</code>.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section class="block" id="contact">
+        <div class="wrap">
+            <h2 class="section-heading"><span class="head-prompt">$</span> contact --me</h2>
+            <div class="contact-row">
+                <div><span class="label">email</span><a href="mailto:guncraft2000@naver.com">guncraft2000@naver.com</a></div>
+                <div><span class="label">email2</span><a href="mailto:guncraft1000@gmail.com">guncraft1000@gmail.com</a></div>
+                <div><span class="label">github</span><a href="https://github.com/v2lixx" target="_blank" rel="noopener">@v2lixx</a></div>
+                <div><span class="label">loc</span>Suwon, Korea</div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="foot">
+        <div class="wrap">
+            <span class="foot-prompt">v2lixx@ubuntu:~$</span>
+            <span class="foot-text">exit</span>
+            <span class="cursor">_</span>
+            <div class="foot-copy">© 2026 Seung Min Shin</div>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+</body>
+</html>
