@@ -321,26 +321,37 @@ ASan 없는 별도 debug 빌드에서 Memcheck로도 돌렸다.
 
 ## 패치
 
-upstream 픽스 방향은 단순하다 — `Content-Length`를 파싱한 뒤 음수/0을 단일 사이트에서 거부.
-어차피 `av_malloc(0)`은 의미 없는 케이스고, 음수는 더더욱.
+위 내용을 정리해서 FFmpeg 메인테이너에게 제보했고, [PR #22902](https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls/22902)로 다음과 같이 수정되어 머지됐다.
 
-merge 후로는 `Content-Length: 2³² − 1 (= 4294967295)` (또는 어떤 식으로든 negative로 wrap 되는 값)는 `AVERROR_INVALIDDATA`로 일찍 거절된다.
+```diff
+--- a/libavformat/rtspdec.c
++++ b/libavformat/rtspdec.c
+@@ -191,7 +191,7 @@
+         rtsp_send_reply(s, RTSP_STATUS_SERVICE, NULL, request.seq);
+         return AVERROR_OPTION_NOT_FOUND;
+     }
+-    if (request.content_length) {
++    if (request.content_length > 0) {
+         sdp = av_malloc(request.content_length + 1);
+         if (!sdp)
+             return AVERROR(ENOMEM);
+@@ -215,10 +215,10 @@
+         return 0;
+     }
+     av_log(s, AV_LOG_ERROR,
+-           "Content-Length header value exceeds sdp allocated buffer (4KB)\n");
++           "Invalid ANNOUNCE Content-Length %d\n", request.content_length);
+     rtsp_send_reply(s, RTSP_STATUS_INTERNAL,
+-                    "Content-Length exceeds buffer size", request.seq);
+-    return AVERROR(EIO);
++                    "Invalid Content-Length", request.seq);
++    return AVERROR_INVALIDDATA;
+ }
+```
 
-→ [FFmpeg PR #22902](https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls/22902)
+`if (request.content_length)` → `if (request.content_length > 0)` 로 바뀌면서, 이전엔 `0`만 거르고 음수는 그대로 통과시켰던 게 이제 양수가 아닌 모든 값을 같이 떨어뜨리게 되었다.
+우리가 보낸 `Content-Length: 4294967295` → `int -1` 케이스도 여기서 바로 fail 처리되어 `av_malloc`을 호출조차 하지 않는다.
 
-## 1바이트 NUL이 진짜로 위험한가?
+else 분기(원래는 "Content-Length header value exceeds sdp allocated buffer (4KB)"라는 약간 부정확한 에러를 뱉던 자리)의 메시지와 반환 코드도 같이 정리됐다.
+`AVERROR(EIO)` → `AVERROR_INVALIDDATA`로 의미를 맞추고, 로그에는 잘못된 실제 값(`%d`)을 그대로 출력하도록 바꿨다.
 
-이 글에선 exploitation까지는 안 갔다.
-1바이트 NUL underflow의 천장은 상황에 강하게 의존한다 — 어디 glibc chunk 헤더 옆에 떨어지느냐, glibc 버전, `MALLOC_ARENA_*`, free chunk와의 인접성 등등.
-거기까지 가지 않아도 다음 두 가지는 분명하다.
-
-1. 분명한 메모리 손상이고, ASan과 Valgrind가 모두 동의한다.
-2. 손상 직후 `av_log` / `ff_sdp_parse`가 같은 영역을 추가로 읽어 unsanitized 데이터가 logging/parsing 흐름으로 흘러간다.
-
-RTSP listen mode가 외부 노출 모드(미디어 게이트웨이, recording proxy 등)로 운용되는 케이스가 적지 않으니, 프로토콜 레벨에서 단 한 번의 `ANNOUNCE`로 트리거된다는 사실 자체가 충분히 시사적이다.
-
----
-
-링크
-- PR: <https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls/22902>
-- File: `libavformat/rtspdec.c`
