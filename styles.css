@@ -916,6 +916,19 @@ footer.foot {
 
 .blog-post img { max-width: 100%; height: auto; border-radius: 3px; }
 
+/* Line-number gutter inside code blocks (post-processed from /* NNN */ comments) */
+.blog-post pre .ln {
+    display: inline-block;
+    min-width: 2.5em;
+    margin-right: 0.75em;
+    text-align: right;
+    color: var(--muted);
+    opacity: 0.55;
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
 .blog-post table {
     width: 100%;
     border-collapse: collapse;

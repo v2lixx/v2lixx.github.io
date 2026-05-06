@@ -160,6 +160,15 @@
                     }
                 });
             }
+
+            // Convert "/* NNN */" line-number comments into clean .ln gutter
+            // (only matches numeric content; real C comments like "/* Read SDP */" are untouched)
+            bodyEl.querySelectorAll('pre code').forEach(function (block) {
+                block.innerHTML = block.innerHTML.replace(
+                    /<span class="hljs-comment">\/\*\s*(\d+)\s*\*\/<\/span>/g,
+                    '<span class="ln">$1</span>'
+                );
+            });
         })
         .catch(function (err) {
             bodyEl.innerHTML = '<p class="post-empty">' + escapeHTML(err.message || 'failed to load post.') + '</p>';
