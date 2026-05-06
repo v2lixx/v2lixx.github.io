@@ -3,7 +3,7 @@
     "number": 1,
     "slug": "post1",
     "title": "avformat/rtspdec: 1-byte heap-buffer-underflow in rtsp_read_announce",
-    "date": "2026-04-15",
+    "date": "2026-05-06",
     "vendor": "FFmpeg",
     "severity": "medium",
     "summary": "RTSP listen mode parses Content-Length as signed int; an oversize value wraps to -1, the av_malloc(0) fallback returns 1 byte, and sdp[-1] = '\\0' lands one byte before the allocation.",
