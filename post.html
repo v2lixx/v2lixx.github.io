@@ -41,7 +41,7 @@
         </div>
     </header>
 
-    <section class="block">
+    <section class="block post-body-section">
         <div class="wrap">
             <article class="blog-post" id="post-body">
                 <p class="post-loading">loading…</p>
@@ -147,11 +147,9 @@
                 }
                 if (meta.title) headTitleEl.textContent = meta.title + ' · v2lixx';
                 var bits = [];
-                if (meta.date)     bits.push('<span class="meta-date">' + escapeHTML(meta.date) + '</span>');
-                if (meta.vendor)   bits.push('<span class="meta-vendor">' + escapeHTML(meta.vendor) + '</span>');
-                if (meta.severity) bits.push('<span class="sev ' + escapeHTML(meta.severity) + '">' + escapeHTML(meta.severity.replace(/^./, function (c) { return c.toUpperCase(); })) + '</span>');
-                if (meta.cve)      bits.push('<span class="meta-cve"><a href="https://www.cve.org/CVERecord?id=' + encodeURIComponent(meta.cve) + '" target="_blank" rel="noopener">' + escapeHTML(meta.cve) + '</a></span>');
-                if (meta.pr)       bits.push('<span class="meta-pr"><a href="' + escapeHTML(meta.pr) + '" target="_blank" rel="noopener">PR ↗</a></span>');
+                if (meta.date)   bits.push('<span class="meta-date">' + escapeHTML(meta.date) + '</span>');
+                if (meta.vendor) bits.push('<span class="meta-vendor">' + escapeHTML(meta.vendor) + '</span>');
+                if (meta.cve)    bits.push('<span class="meta-cve"><a href="https://www.cve.org/CVERecord?id=' + encodeURIComponent(meta.cve) + '" target="_blank" rel="noopener">' + escapeHTML(meta.cve) + '</a></span>');
                 metaEl.innerHTML = bits.join(' · ');
             }
 

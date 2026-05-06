@@ -776,7 +776,8 @@ footer.foot {
 
 /* ----- Post page (post.html) ----- */
 
-.post-intro { padding: 56px 0 12px; }
+.post-intro { padding: 56px 0 0; }
+.block.post-body-section { padding-top: 16px; }
 .post-back-link {
     margin: 14px 0 0;
     font-family: var(--mono);
@@ -827,7 +828,7 @@ footer.foot {
     font-size: 17.5px;
     line-height: 1.75;
     color: var(--bio);
-    padding: 12px 0 8px;
+    padding: 0 0 8px;
 }
 .blog-post > :first-child { margin-top: 0; }
 .blog-post h1,
