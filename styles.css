@@ -687,3 +687,276 @@ footer.foot {
     .glitch:hover::before,
     .glitch:hover::after { animation: none; }
 }
+
+/* ============================================================
+   Research index + post page
+   ============================================================ */
+
+.nav-links a.active { color: var(--fg-strong); }
+.nav-links a.active::before { color: var(--accent); }
+
+.page-title {
+    margin: 28px 0 6px;
+    font-size: 30px;
+    font-weight: 600;
+    color: var(--fg-strong);
+    letter-spacing: -0.02em;
+}
+
+/* ----- Post list (research.html) ----- */
+
+.post-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.post-list li {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 22px;
+    align-items: baseline;
+    padding: 16px 0;
+    border-bottom: 1px dashed var(--border);
+}
+.post-list li:last-child { border-bottom: none; }
+
+.post-list .post-when {
+    font-family: var(--mono);
+    font-size: 13.5px;
+    color: var(--muted);
+    padding-top: 3px;
+    white-space: nowrap;
+}
+.post-list .post-link {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--fg-strong);
+    text-decoration: none;
+    line-height: 1.4;
+    display: inline-block;
+    margin-bottom: 6px;
+    transition: color .15s ease;
+}
+.post-list .post-link:hover { color: var(--accent); }
+
+.post-list .post-meta-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 4px 0 6px;
+    flex-wrap: wrap;
+}
+.post-list .post-vendor {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 2px 8px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--muted);
+}
+.post-list .post-summary {
+    margin: 4px 0 0;
+    font-size: 15.5px;
+    color: var(--entry-text);
+    line-height: 1.55;
+}
+.post-list .post-loading,
+.post-list .post-empty {
+    grid-column: 1 / -1;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 12px 0;
+}
+
+/* ----- Post page (post.html) ----- */
+
+.post-intro { padding: 56px 0 12px; }
+.post-back-link {
+    margin: 14px 0 0;
+    font-family: var(--mono);
+    font-size: 13.5px;
+}
+.post-back-link a {
+    color: var(--muted);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 1px;
+}
+.post-back-link a:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+.post-back-bottom {
+    margin: 56px 0 0;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+}
+
+.post-meta {
+    margin: 14px 0 0;
+    font-family: var(--mono);
+    font-size: 13.5px;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    align-items: center;
+}
+.post-meta > span { display: inline-flex; align-items: center; }
+.post-meta .meta-vendor { color: var(--fg); }
+.post-meta a { color: var(--accent); text-decoration: none; }
+.post-meta a:hover { color: var(--fg-strong); }
+.post-meta .sev {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 2px 8px;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+}
+
+/* ----- Rendered markdown (.blog-post) ----- */
+
+.blog-post {
+    font-size: 17.5px;
+    line-height: 1.75;
+    color: var(--bio);
+    padding: 12px 0 8px;
+}
+.blog-post > :first-child { margin-top: 0; }
+.blog-post h1,
+.blog-post h2,
+.blog-post h3,
+.blog-post h4 {
+    color: var(--fg-strong);
+    letter-spacing: -0.01em;
+    margin: 1.6em 0 0.5em;
+    line-height: 1.3;
+}
+.blog-post h1 { font-size: 26px; font-weight: 600; }
+.blog-post h2 {
+    font-size: 21px;
+    font-weight: 600;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+}
+.blog-post h3 { font-size: 18px; font-weight: 600; }
+.blog-post h4 { font-size: 16px; font-weight: 600; color: var(--fg); }
+.blog-post p  { margin: 0 0 1em; }
+
+.blog-post a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-color: var(--accent-dim);
+    text-underline-offset: 3px;
+}
+.blog-post a:hover {
+    color: var(--fg-strong);
+    text-decoration-color: var(--fg-strong);
+}
+
+.blog-post code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--accent-soft);
+    color: var(--fg-strong);
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+.blog-post pre {
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.55;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 0 0 1.2em;
+}
+:root[data-theme="light"] .blog-post pre {
+    background: #161b22;
+}
+.blog-post pre code {
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+    color: inherit;
+}
+
+.blog-post blockquote {
+    margin: 1.2em 0;
+    padding: 6px 16px;
+    border-left: 3px solid var(--accent-dim);
+    background: var(--accent-soft);
+    color: var(--fg);
+    border-radius: 0 3px 3px 0;
+}
+.blog-post blockquote p:last-child { margin-bottom: 0; }
+
+.blog-post ul,
+.blog-post ol {
+    padding-left: 1.4em;
+    margin: 0 0 1em;
+}
+.blog-post li { margin: 0.25em 0; }
+
+.blog-post hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 2em 0;
+}
+
+.blog-post img { max-width: 100%; height: auto; border-radius: 3px; }
+
+.blog-post table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0 1.2em;
+    font-size: 15px;
+}
+.blog-post th,
+.blog-post td {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+}
+.blog-post th {
+    color: var(--muted);
+    font-weight: 600;
+    font-family: var(--mono);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border);
+}
+
+.post-loading,
+.post-empty {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 12px 0;
+}
+
+/* ----- Responsive (research / post) ----- */
+
+@media (max-width: 640px) {
+    .post-list li {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+    .post-list .post-when { padding-top: 0; }
+    .blog-post { font-size: 16.5px; }
+    .blog-post pre { font-size: 12.5px; padding: 12px; }
+    .blog-post h1 { font-size: 22px; }
+    .blog-post h2 { font-size: 18.5px; }
+    .blog-post h3 { font-size: 16.5px; }
+}

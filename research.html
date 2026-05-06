@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research · v2lixx</title>
+    <meta name="description" content="Research notes and vulnerability writeups by Seung Min Shin (@v2lixx).">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>(function(){try{var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);var c=localStorage.getItem('crt');if(c==='on')document.documentElement.setAttribute('data-crt','on');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
+</head>
+<body>
+    <div class="scanline" aria-hidden="true"></div>
+    <div class="noise" aria-hidden="true"></div>
+
+    <nav class="nav">
+        <div class="wrap">
+            <div class="nav-brand"><a href="index.html">v2lixx<span class="cursor">_</span></a></div>
+            <ul class="nav-links">
+                <li><a href="index.html#about">about</a></li>
+                <li><a href="index.html#vulns">vulns</a></li>
+                <li><a href="research.html" class="active">research</a></li>
+                <li><a href="index.html#contact">contact</a></li>
+                <li><button class="toggle-btn" id="crt-toggle" aria-label="Toggle CRT scanline">crt</button></li>
+                <li><button class="toggle-btn" id="theme-toggle" aria-label="Toggle theme">dark</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header class="intro" id="top">
+        <div class="wrap">
+            <div class="terminal-prompt">
+                <span class="prompt-user">v2lixx</span><span class="prompt-at">@</span><span class="prompt-host">ubuntu</span><span class="prompt-colon">:</span><span class="prompt-path">~/research</span><span class="prompt-dollar">$</span>
+                <span class="prompt-cmd">ls -lt posts/</span>
+            </div>
+            <h1 class="page-title">Research</h1>
+            <p class="page-sub">Writeups for publicly disclosed vulnerabilities — root cause, repro, and fix.</p>
+        </div>
+    </header>
+
+    <section class="block">
+        <div class="wrap">
+            <ul class="post-list" id="post-list">
+                <li class="post-loading">loading…</li>
+            </ul>
+        </div>
+    </section>
+
+    <footer class="foot">
+        <div class="wrap">
+            <span class="foot-prompt">v2lixx@ubuntu:~$</span>
+            <span class="foot-text">cd ..</span>
+            <span class="cursor">_</span>
+            <div class="foot-copy">© 2026 Seung Min Shin</div>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+    <script>
+    (function () {
+        'use strict';
+        function escapeHTML(s) {
+            return String(s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+        function fmtDate(s) {
+            // accept YYYY-MM-DD or YYYY-MM
+            return s || '';
+        }
+        var listEl = document.getElementById('post-list');
+
+        fetch('posts/index.json', { cache: 'no-cache' })
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function (posts) {
+                if (!Array.isArray(posts) || posts.length === 0) {
+                    listEl.innerHTML = '<li class="post-empty">no posts yet.</li>';
+                    return;
+                }
+                // newest first
+                posts.sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
+
+                var html = posts.map(function (p) {
+                    var sevClass = 'sev ' + (p.severity || 'low');
+                    var sevLabel = (p.severity || '').replace(/^./, function (c) { return c.toUpperCase(); });
+                    var summary = p.summary ? '<p class="post-summary">' + escapeHTML(p.summary) + '</p>' : '';
+                    var vendorChip = p.vendor ? '<span class="post-vendor">' + escapeHTML(p.vendor) + '</span>' : '';
+                    var sevChip = sevLabel ? '<span class="' + escapeHTML(sevClass) + '">' + escapeHTML(sevLabel) + '</span>' : '';
+                    return (
+                        '<li>' +
+                            '<div class="post-when">' + escapeHTML(fmtDate(p.date)) + '</div>' +
+                            '<div class="post-body">' +
+                                '<a class="post-link" href="post.html?id=' + encodeURIComponent(p.slug) + '">' + escapeHTML(p.title) + '</a>' +
+                                '<div class="post-meta-row">' + vendorChip + sevChip + '</div>' +
+                                summary +
+                            '</div>' +
+                        '</li>'
+                    );
+                }).join('');
+                listEl.innerHTML = html;
+            })
+            .catch(function (err) {
+                listEl.innerHTML = '<li class="post-empty">failed to load posts: ' + escapeHTML(err.message) + '</li>';
+            });
+    })();
+    </script>
+</body>
+</html>

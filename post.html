@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="head-title">Post · v2lixx</title>
+    <meta name="description" content="Vulnerability writeup by Seung Min Shin (@v2lixx).">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>(function(){try{var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);var c=localStorage.getItem('crt');if(c==='on')document.documentElement.setAttribute('data-crt','on');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
+</head>
+<body>
+    <div class="scanline" aria-hidden="true"></div>
+    <div class="noise" aria-hidden="true"></div>
+
+    <nav class="nav">
+        <div class="wrap">
+            <div class="nav-brand"><a href="index.html">v2lixx<span class="cursor">_</span></a></div>
+            <ul class="nav-links">
+                <li><a href="index.html#about">about</a></li>
+                <li><a href="index.html#vulns">vulns</a></li>
+                <li><a href="research.html" class="active">research</a></li>
+                <li><a href="index.html#contact">contact</a></li>
+                <li><button class="toggle-btn" id="crt-toggle" aria-label="Toggle CRT scanline">crt</button></li>
+                <li><button class="toggle-btn" id="theme-toggle" aria-label="Toggle theme">dark</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header class="intro post-intro">
+        <div class="wrap">
+            <div class="terminal-prompt">
+                <span class="prompt-user">v2lixx</span><span class="prompt-at">@</span><span class="prompt-host">ubuntu</span><span class="prompt-colon">:</span><span class="prompt-path">~/research</span><span class="prompt-dollar">$</span>
+                <span class="prompt-cmd" id="post-cmd">cat post.md</span>
+            </div>
+            <p class="post-back-link"><a href="research.html">← all research</a></p>
+            <div class="post-meta" id="post-meta"></div>
+        </div>
+    </header>
+
+    <section class="block">
+        <div class="wrap">
+            <article class="blog-post" id="post-body">
+                <p class="post-loading">loading…</p>
+            </article>
+            <p class="post-back-link post-back-bottom"><a href="research.html">← all research</a></p>
+        </div>
+    </section>
+
+    <footer class="foot">
+        <div class="wrap">
+            <span class="foot-prompt">v2lixx@ubuntu:~$</span>
+            <span class="foot-text">cd ..</span>
+            <span class="cursor">_</span>
+            <div class="foot-copy">© 2026 Seung Min Shin</div>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>
+    (function () {
+        'use strict';
+
+        function escapeHTML(s) {
+            return String(s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        var bodyEl = document.getElementById('post-body');
+        var metaEl = document.getElementById('post-meta');
+        var cmdEl  = document.getElementById('post-cmd');
+        var headTitleEl = document.getElementById('head-title');
+
+        var params = new URLSearchParams(location.search);
+        var slug = params.get('id') || '';
+
+        // basic slug whitelist: alphanumerics + dash + underscore
+        if (!/^[a-zA-Z0-9_-]+$/.test(slug)) {
+            bodyEl.innerHTML = '<p class="post-empty">invalid post id.</p>';
+            return;
+        }
+
+        if (cmdEl) cmdEl.textContent = 'cat ' + slug + '.md';
+
+        // configure marked + highlight.js
+        if (window.marked && window.hljs) {
+            marked.setOptions({
+                gfm: true,
+                breaks: false,
+                headerIds: true,
+                mangle: false,
+                highlight: function (code, lang) {
+                    try {
+                        if (lang && hljs.getLanguage(lang)) {
+                            return hljs.highlight(code, { language: lang, ignoreIllegals: true }).value;
+                        }
+                        return hljs.highlightAuto(code).value;
+                    } catch (e) { return code; }
+                },
+                langPrefix: 'hljs language-'
+            });
+        }
+
+        // load metadata first (for title + chips), then body
+        Promise.all([
+            fetch('posts/index.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }),
+            fetch('posts/' + slug + '.md', { cache: 'no-cache' }).then(function (r) {
+                if (!r.ok) throw new Error('post not found (HTTP ' + r.status + ')');
+                return r.text();
+            })
+        ])
+        .then(function (results) {
+            var posts = results[0] || [];
+            var md    = results[1];
+
+            var meta = posts.find ? posts.find(function (p) { return p.slug === slug; }) : null;
+            if (!meta) {
+                // try without find for older browsers
+                for (var i = 0; i < posts.length; i++) if (posts[i].slug === slug) { meta = posts[i]; break; }
+            }
+
+            if (meta) {
+                if (meta.title) headTitleEl.textContent = meta.title + ' · v2lixx';
+                var bits = [];
+                if (meta.date)     bits.push('<span class="meta-date">' + escapeHTML(meta.date) + '</span>');
+                if (meta.vendor)   bits.push('<span class="meta-vendor">' + escapeHTML(meta.vendor) + '</span>');
+                if (meta.severity) bits.push('<span class="sev ' + escapeHTML(meta.severity) + '">' + escapeHTML(meta.severity.replace(/^./, function (c) { return c.toUpperCase(); })) + '</span>');
+                if (meta.cve)      bits.push('<span class="meta-cve"><a href="https://www.cve.org/CVERecord?id=' + encodeURIComponent(meta.cve) + '" target="_blank" rel="noopener">' + escapeHTML(meta.cve) + '</a></span>');
+                if (meta.pr)       bits.push('<span class="meta-pr"><a href="' + escapeHTML(meta.pr) + '" target="_blank" rel="noopener">PR ↗</a></span>');
+                metaEl.innerHTML = bits.join(' · ');
+            }
+
+            var html = window.marked ? marked.parse(md) : ('<pre>' + escapeHTML(md) + '</pre>');
+            bodyEl.innerHTML = html;
+
+            // post-process: open external links in new tab
+            bodyEl.querySelectorAll('a[href]').forEach(function (a) {
+                var href = a.getAttribute('href');
+                if (/^https?:\/\//.test(href)) {
+                    a.setAttribute('target', '_blank');
+                    a.setAttribute('rel', 'noopener');
+                }
+            });
+
+            // re-highlight in case marked's auto path missed any
+            if (window.hljs) {
+                bodyEl.querySelectorAll('pre code').forEach(function (block) {
+                    if (!block.classList.contains('hljs')) {
+                        try { hljs.highlightElement(block); } catch (e) {}
+                    }
+                });
+            }
+        })
+        .catch(function (err) {
+            bodyEl.innerHTML = '<p class="post-empty">' + escapeHTML(err.message || 'failed to load post.') + '</p>';
+        });
+    })();
+    </script>
+</body>
+</html>

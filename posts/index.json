@@ -1,0 +1,12 @@
+[
+  {
+    "slug": "ffmpeg-rtspdec-announce-underflow",
+    "title": "avformat/rtspdec: 1-byte heap-buffer-underflow in rtsp_read_announce",
+    "date": "2026-04-15",
+    "vendor": "FFmpeg",
+    "severity": "medium",
+    "summary": "RTSP listen mode parses Content-Length as signed int; an oversize value wraps to -1, the av_malloc(0) fallback returns 1 byte, and sdp[-1] = '\\0' lands one byte before the allocation.",
+    "pr": "https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls/22902",
+    "cve": null
+  }
+]
