@@ -283,11 +283,44 @@ write는 그 시작 주소보다 **1바이트 앞**에 떨어진다.
 콜스택을 보면 write의 첫 프레임은 `rtsp_read_announce libavformat/rtspdec.c:208`, allocation의 첫 프레임은 같은 함수의 `:195`다.
 라인 195가 `sdp = av_malloc(request.content_length + 1)` 자리, 라인 208이 `sdp[request.content_length] = '\0'` 자리 — 코드 따라가며 짠 시나리오가 ASan 트레이스로 한 글자도 다르지 않게 검증된다.
 
-마지막으로 shadow map 부분.
-ASan은 힙의 8바이트마다 1바이트씩 *shadow byte* 라는 메타데이터를 두고 그 영역의 접근 가능 여부를 기록한다.
-화살표(`=>`) 줄에서 buggy address가 가리키는 shadow 바이트는 `[fa]` — **heap left redzone**, 즉 할당 영역 바로 앞에 일부러 둔 보호 구간이다.
-그 바로 다음 칸의 `01`은 **partially addressable** 표식이고, "8바이트 shadow 단위 중 첫 1바이트만 valid"라는 뜻 — 우리가 받은 1바이트 할당이 정확히 거기에 자리잡고 있다는 시그널이다.
-결국 shadow map은 "1바이트 할당의 redzone 자리에 1바이트 write가 떨어졌다"는 그림을 한 줄로 시각화하고 있는 셈.
+마지막은 shadow map 부분이다.
+좀 추상적인 개념이라 그림으로 풀어보면 이해가 쉽다.
+
+**Shadow byte** 는 ASan이 힙을 추적하는 방식이다.
+실제 힙 **8바이트마다 1바이트의 shadow** 를 따로 두고, 그 한 바이트 값으로 해당 8바이트 영역의 상태를 표현한다.
+
+| shadow 값 | 의미 |
+|---|---|
+| `00` | 8바이트 전부 valid (정상 할당 영역) |
+| `01` ~ `07` | 앞쪽 N바이트만 valid, 나머지는 unaddressable |
+| `fa` | 통째로 redzone — 할당 영역 옆에 일부러 둔 차단 구간 |
+
+abort 출력의 화살표(`=>`) 줄을 다시 보면:
+
+```text
+=>0x200ff51c00d0: fa fa fa fa fa fa fa fa fa[fa]01 fa fa fa fa fa
+```
+
+주목할 부분은 가운데 `[fa]` 와 그 다음 칸 `01` 두 자리다.
+각 shadow 1바이트가 힙 8바이트를 커버하니까 두 칸을 풀면 이런 그림이 된다.
+
+```text
+shadow byte:    ...    [fa]                  01                ...
+                        │                     │
+                        │  (각 shadow 1바이트 = 힙 8바이트)
+                        ▼                     ▼
+heap 영역:       ┌────────────────────┬────────────────────────┐
+                 │  8B 전부 redzone    │ 1B valid + 7B 미사용    │
+                 └────────────────────┴────────────────────────┘
+                 0xffffa8e006c8        0xffffa8e006d0
+                                ↑          ↑
+                          0xffffa8e006cf    0xffffa8e006d0
+                          = write 주소      = 우리가 받은 1B 할당의 시작
+                          = sdp[-1]         = sdp
+```
+
+`[fa]` 가 커버하는 redzone 8바이트 중 **마지막 바이트** 가 정확히 write 주소 `0xffffa8e006cf` 이고, 바로 다음 칸 `01` 이 커버하는 8바이트 중 **첫 1바이트** 가 우리 할당의 시작 `0xffffa8e006d0` 이다.
+즉 shadow map은 "1바이트 할당의 시작 직전, redzone의 끝 바이트에 1바이트 write가 떨어졌다" 는 그림을 ASan이 미리 그려둔 셈이다.
 
 ## Valgrind 결과
 
