@@ -171,6 +171,15 @@ print(s.recv(4096).decode("latin1", "ignore"))
 s.close()
 ```
 
+구성을 짚어보면:
+
+- `--value` 기본값 `4294967295` (= 2³² − 1) — 분석에서 본 그 값. `int`로 truncate되면 `-1`이 되는 트리거 그 자체.
+- `--body` 기본값 `v=0\r\n` — SDP 최소 형태. ffmpeg가 ANNOUNCE 본문 처리 흐름으로 정상 진입하도록 보내주는 최소 페이로드.
+- 요청은 socket으로 raw RTSP 평문을 직접 조립한다 (별도 RTSP 라이브러리 없음). 메서드는 `ANNOUNCE`, 헤더는 `CSeq` / `Content-Type: application/sdp` / `Content-Length: {value}` 세 개.
+- 핵심은 `Content-Length: {args.value}` 한 줄. 나머지 헤더와 본문은 ANNOUNCE 처리 분기를 통과시키기 위한 장식이고, 진짜 트리거는 이 한 줄이다.
+
+마지막 `s.recv(4096)`로 응답을 받으러 가지만, affected 빌드라면 그 사이 ffmpeg는 라인 208의 underflow를 맞고 ASan abort로 죽어 있다 — `recv()`는 EOF를 받고 빈 문자열이 출력될 가능성이 높다.
+
 서버 쪽:
 
 ```bash
