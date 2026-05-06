@@ -187,8 +187,7 @@ s.close()
            -i rtsp://127.0.0.1:8579/poc -f null -
 ```
 
-PoC 한 번 던지면 끝.
-`ANNOUNCE`만 받으면 트리거된다.
+PoC 한번으로 `ANNOUNCE`만 받으면 트리거된다.
 
 ## ASan 출력
 
@@ -263,11 +262,18 @@ Shadow byte legend (one shadow byte represents 8 application bytes):
 ==14140==ABORTING
 ```
 
-핵심만 짚으면:
+주소부터 보면 write 위치가 `0xffffa8e006cf`이고 할당 영역은 `[0xffffa8e006d0, 0xffffa8e006d1)` — 닫힌 표기로 정확히 **1바이트짜리 영역**이다.
+write는 그 시작 주소보다 **1바이트 앞**에 떨어진다.
+분석에서 따라온 `sdp[-1]`이 ASan에 그대로 잡힌 셈이다.
 
-- write 주소 `0xffffa8e006cf`, 할당 영역 `[0xffffa8e006d0, 0xffffa8e006d1)` — **딱 1바이트**, write는 영역 시작보다 정확히 1바이트 앞
-- write의 콜스택은 `rtspdec.c:208`, allocation의 콜스택은 `rtspdec.c:195` — 코드 분석과 정확히 일치
-- shadow map의 화살표(`=>`) 줄을 보면 buggy address의 shadow 바이트는 `[fa]` (heap left redzone)이고, 그 바로 다음이 `01` (partially addressable — 1바이트 할당의 표식). 정확히 "1바이트 할당의 redzone 영역에 1바이트 write" 그림
+콜스택을 보면 write의 첫 프레임은 `rtsp_read_announce libavformat/rtspdec.c:208`, allocation의 첫 프레임은 같은 함수의 `:195`다.
+라인 195가 `sdp = av_malloc(request.content_length + 1)` 자리, 라인 208이 `sdp[request.content_length] = '\0'` 자리 — 코드 따라가며 짠 시나리오가 ASan 트레이스로 한 글자도 다르지 않게 검증된다.
+
+마지막으로 shadow map 부분.
+ASan은 힙의 8바이트마다 1바이트씩 *shadow byte* 라는 메타데이터를 두고 그 영역의 접근 가능 여부를 기록한다.
+화살표(`=>`) 줄에서 buggy address가 가리키는 shadow 바이트는 `[fa]` — **heap left redzone**, 즉 할당 영역 바로 앞에 일부러 둔 보호 구간이다.
+그 바로 다음 칸의 `01`은 **partially addressable** 표식이고, "8바이트 shadow 단위 중 첫 1바이트만 valid"라는 뜻 — 우리가 받은 1바이트 할당이 정확히 거기에 자리잡고 있다는 시그널이다.
+결국 shadow map은 "1바이트 할당의 redzone 자리에 1바이트 write가 떨어졌다"는 그림을 한 줄로 시각화하고 있는 셈.
 
 ## Valgrind 결과
 
@@ -312,8 +318,8 @@ ASan 없는 별도 debug 빌드에서 Memcheck로도 돌렸다.
 - 라인 209 — 그 뒤 `av_log()` 호출 경로의 포맷 처리 중 `strlen`이 NUL 종료 안 된 영역을 읽음
 - 라인 210 — `ff_sdp_parse()`가 같은 영역 위에서 `strspn` 등을 돌리며 conditional jump
 
-즉 1바이트 손상 자체로 끝나지 않고, 그 직후 로깅·SDP 파싱 경로 전체가 unsanitized 메모리에 의해 휩쓸린다.
-"1바이트라 별것 아니네" 하기엔 후속 흐름이 산만한 케이스.
+즉 1바이트 손상 자체로 끝나지 않고, 그 직후 로깅·SDP 파싱 경로 전체가 unsanitized 메모리에 의해 휩쓸린다. 마치 파도.
+"1바이트는 별거 아닌거 아님?" 이라고 하기엔 후속 흐름이 산만하다.
 
 ## 패치
 
