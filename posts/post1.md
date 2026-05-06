@@ -21,7 +21,7 @@ HTTP처럼 `DESCRIBE`, `SETUP`, `PLAY`, `ANNOUNCE`, `TEARDOWN` 같은 method를 
 ffmpeg는 보통 RTSP **클라이언트** 쪽으로 동작한다 — 외부 RTSP 서버에 붙어서 스트림을 받아오는 게 흔한 케이스.
 그런데 이 옵션을 켜면 반대로 **ffmpeg 자체가 서버 노릇을 하면서 클라이언트의 요청을 받는** 모드가 된다.
 미디어 게이트웨이나 recording proxy 시나리오에서 쓰인다. 
-그러면 이 모드에선 클라가 보낸 메시지를 어떻게 파싱하는지가 궁금해져서, `rtsp_listen()`과 그 안에서 호출되는 `rtsp_read_announce()`로 들어가서 알아보게 됐다. 
+그러면 이 모드에선 클라이언트가 보낸 메시지를 어떻게 파싱하는지가 궁금해져서, `rtsp_listen()`과 그 안에서 호출되는 `rtsp_read_announce()`로 들어가서 알아보게 됐다. 
 거기서 `Content-Length`를 처리하는 한 줄을 보다가 한 군데가 좀 이상해 보였다.
 
 ## 취약한 코드
@@ -106,7 +106,7 @@ aarch64 Linux는 LP64라서 `int`는 32-bit, `long`은 64-bit.
 `strtol`이 돌려준 `long`이 곧장 `int` 필드에 대입되는 구조다.
 한쪽이 64-bit, 한쪽이 32-bit이라서 값이 `int` 범위를 넘는 순간 잘려 들어간다.
 
-클라가 `Content-Length: 2³² − 1 (= 4294967295)`를 보내면, `strtol()`은 일단 `4294967295L`을 그대로 돌려준다 — 64-bit long에는 정상으로 들어가는 값이라 여기서는 사고가 안 난다.
+클라이언트가 `Content-Length: 2³² − 1 (= 4294967295)`를 보내면, `strtol()`은 일단 `4294967295L`을 그대로 돌려준다 — 64-bit long에는 정상으로 들어가는 값이라 여기서는 사고가 안 난다.
 사고는 그 결과를 `int` 필드에 대입하는 라인 1148이다.
 32-bit로 잘리면서 비트 패턴이 `0xFFFFFFFF`이 되고, signed int로 해석되면 **`-1`**이 된다.
 
@@ -132,7 +132,13 @@ aarch64 Linux는 LP64라서 `int`는 32-bit, `long`은 64-bit.
 그러면 라인 144에서 `!ptr && !size`가 참이 되고, `size = 1; ptr = av_malloc(1);` 로 자기 자신을 1바이트 짜리로 재호출한다.
 즉 `av_malloc(0)`이 돌려주는 건 NULL이 아니라 유효한 **1바이트 영역**을 가리키는 포인터다.
 
-그 상태에서 라인 208이 실행되면 `sdp[request.content_length]`는 결국 `sdp[-1]`.
+그 상태에서 라인 208이 실행된다.
+
+```c
+/* 208 */         sdp[request.content_length] = '\0';
+```
+
+`sdp[request.content_length]`는 결국 `sdp[-1]`.
 `sdp`가 가리키는 1바이트 영역의 **시작 주소 직전 1바이트**에 NUL이 박힌다.
 이게 1-byte heap-buffer-underflow다.
 
