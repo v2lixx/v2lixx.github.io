@@ -191,8 +191,6 @@ PoC 한번으로 `ANNOUNCE`만 받으면 트리거된다.
 
 ## ASan 출력
 
-전체 덤프 그대로.
-
 ```text
 =================================================================
 ==14140==ERROR: AddressSanitizer: heap-buffer-overflow on address 0xffffa8e006cf at pc 0xaaaab9d15044 bp 0xffffda4ce160 sp 0xffffda4ce150
