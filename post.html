@@ -86,7 +86,8 @@
             return;
         }
 
-        if (cmdEl) cmdEl.textContent = 'cat ' + slug + '.md';
+        // placeholder until metadata loads (gets overwritten with post<N>.md once meta arrives)
+        if (cmdEl) cmdEl.textContent = 'cat post.md';
 
         // configure marked + highlight.js
         if (window.marked && window.hljs) {
@@ -126,6 +127,9 @@
             }
 
             if (meta) {
+                if (cmdEl && meta.number != null) {
+                    cmdEl.textContent = 'cat post' + meta.number + '.md';
+                }
                 if (meta.title) headTitleEl.textContent = meta.title + ' · v2lixx';
                 var bits = [];
                 if (meta.date)     bits.push('<span class="meta-date">' + escapeHTML(meta.date) + '</span>');

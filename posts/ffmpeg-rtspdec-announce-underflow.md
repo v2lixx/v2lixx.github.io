@@ -6,18 +6,58 @@ FFmpeg는 거의 모든 컨테이너·코덱·프로토콜을 다 다루는, 멀
 
 ## 취약 코드
 
-`libavformat/rtspdec.c`의 `rtsp_read_announce()`. 단순화하면 이런 모양이다.
+`libavformat/rtspdec.c`의 `rtsp_read_announce()` 전체.
 
 ```c
-// libavformat/rtspdec.c
-if (request.content_length) {
-    sdp = av_malloc(request.content_length + 1);   // line 195
-    // ... 본문 읽어서 sdp 채움 ...
-    sdp[request.content_length] = '\0';            // line 208
+static int rtsp_read_announce(AVFormatContext *s)
+{
+    RTSPState *rt             = s->priv_data;
+    RTSPMessageHeader request = { 0 };
+    char *sdp;
+    int  ret;
+
+    ret = rtsp_read_request(s, &request, "ANNOUNCE");
+    if (ret)
+        return ret;
+    rt->seq++;
+    if (strcmp(request.content_type, "application/sdp")) {
+        av_log(s, AV_LOG_ERROR, "Unexpected content type %s\n",
+               request.content_type);
+        rtsp_send_reply(s, RTSP_STATUS_SERVICE, NULL, request.seq);
+        return AVERROR_OPTION_NOT_FOUND;
+    }
+    if (request.content_length) {
+        sdp = av_malloc(request.content_length + 1);
+        if (!sdp)
+            return AVERROR(ENOMEM);
+
+        /* Read SDP */
+        if (ffurl_read_complete(rt->rtsp_hd, sdp, request.content_length)
+            < request.content_length) {
+            av_log(s, AV_LOG_ERROR,
+                   "Unable to get complete SDP Description in ANNOUNCE\n");
+            rtsp_send_reply(s, RTSP_STATUS_INTERNAL, NULL, request.seq);
+            av_free(sdp);
+            return AVERROR(EIO);
+        }
+        sdp[request.content_length] = '\0';
+        av_log(s, AV_LOG_VERBOSE, "SDP: %s\n", sdp);
+        ret = ff_sdp_parse(s, sdp);
+        av_free(sdp);
+        if (ret)
+            return ret;
+        rtsp_send_reply(s, RTSP_STATUS_OK, NULL, request.seq);
+        return 0;
+    }
+    av_log(s, AV_LOG_ERROR,
+           "Content-Length header value exceeds sdp allocated buffer (4KB)\n");
+    rtsp_send_reply(s, RTSP_STATUS_INTERNAL,
+                    "Content-Length exceeds buffer size", request.seq);
+    return AVERROR(EIO);
 }
 ```
 
-`request.content_length`는 `int`이고, 그 값은 `ff_rtsp_parse_line()` 안에서 `strtol()`로 헤더를 파싱한 결과가 그대로 들어간다.
+ASan/Valgrind 트레이스가 가리키는 두 줄은 라인 195의 `sdp = av_malloc(request.content_length + 1)` 와 라인 208의 `sdp[request.content_length] = '\0'`이다. 그리고 `request.content_length`는 `int`이고, 그 값은 `ff_rtsp_parse_line()` 안에서 `strtol()`로 헤더를 파싱한 결과가 그대로 들어간다.
 
 ## 분석
 
@@ -71,34 +111,82 @@ PoC 한 번 던지면 끝. `ANNOUNCE`만 받으면 트리거된다.
 
 ## ASan 출력
 
-ASan은 정확히 우리 분석대로 1바이트 영역의 왼쪽 1바이트 자리를 가리킨다.
+전체 덤프 그대로.
 
 ```text
-==14140==ERROR: AddressSanitizer: heap-buffer-overflow on address 0xffffa8e006cf
+=================================================================
+==14140==ERROR: AddressSanitizer: heap-buffer-overflow on address 0xffffa8e006cf at pc 0xaaaab9d15044 bp 0xffffda4ce160 sp 0xffffda4ce150
 WRITE of size 1 at 0xffffa8e006cf thread T0
-    #0 rtsp_read_announce  libavformat/rtspdec.c:208
-    #1 rtsp_listen         libavformat/rtspdec.c:817
-    #2 rtsp_read_header    libavformat/rtspdec.c:860
-    #3 avformat_open_input libavformat/demux.c:323
-    ...
+    #0 0xaaaab9d15040 in rtsp_read_announce libavformat/rtspdec.c:208
+    #1 0xaaaab9d1ada0 in rtsp_listen libavformat/rtspdec.c:817
+    #2 0xaaaab9d1b284 in rtsp_read_header libavformat/rtspdec.c:860
+    #3 0xaaaab98b4f24 in avformat_open_input libavformat/demux.c:323
+    #4 0xaaaab8b18e04 in ifile_open fftools/ffmpeg_demux.c:2155
+    #5 0xaaaab8b79144 in open_files fftools/ffmpeg_opt.c:1465
+    #6 0xaaaab8b79690 in ffmpeg_parse_options fftools/ffmpeg_opt.c:1514
+    #7 0xaaaab8bd4884 in main fftools/ffmpeg.c:1009
+    #8 0xffffac2773fc in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #9 0xffffac2774d4 in __libc_start_main_impl ../csu/libc-start.c:392
+    #10 0xaaaab8af24ec in _start (/analyze/FFmpeg/ffmpeg+0x5c24ec)
 
-0xffffa8e006cf is located 1 bytes to the left of 1-byte region
-[0xffffa8e006d0,0xffffa8e006d1)
+0xffffa8e006cf is located 1 bytes to the left of 1-byte region [0xffffa8e006d0,0xffffa8e006d1)
 allocated by thread T0 here:
-    #0 __interceptor_posix_memalign
-    #1 av_malloc            libavutil/mem.c:107
-    #2 av_malloc            libavutil/mem.c:146
-    #3 rtsp_read_announce   libavformat/rtspdec.c:195
+    #0 0xffffaccb0140 in __interceptor_posix_memalign ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:226
+    #1 0xaaaabca48858 in av_malloc libavutil/mem.c:107
+    #2 0xaaaabca488cc in av_malloc libavutil/mem.c:146
+    #3 0xaaaab9d14ddc in rtsp_read_announce libavformat/rtspdec.c:195
+    #4 0xaaaab9d1ada0 in rtsp_listen libavformat/rtspdec.c:817
+    #5 0xaaaab9d1b284 in rtsp_read_header libavformat/rtspdec.c:860
+    #6 0xaaaab98b4f24 in avformat_open_input libavformat/demux.c:323
+    #7 0xaaaab8b18e04 in ifile_open fftools/ffmpeg_demux.c:2155
+    #8 0xaaaab8b79144 in open_files fftools/ffmpeg_opt.c:1465
+    #9 0xaaaab8b79690 in ffmpeg_parse_options fftools/ffmpeg_opt.c:1514
+    #10 0xaaaab8bd4884 in main fftools/ffmpeg.c:1009
+    #11 0xffffac2773fc in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #12 0xffffac2774d4 in __libc_start_main_impl ../csu/libc-start.c:392
+    #13 0xaaaab8af24ec in _start (/analyze/FFmpeg/ffmpeg+0x5c24ec)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow libavformat/rtspdec.c:208 in rtsp_read_announce
+Shadow bytes around the buggy address:
+  0x200ff51c0080: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x200ff51c0090: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x200ff51c00a0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x200ff51c00b0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x200ff51c00c0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+=>0x200ff51c00d0: fa fa fa fa fa fa fa fa fa[fa]01 fa fa fa fa fa
+  0x200ff51c00e0: fd fd fa fa fa fa fd fd fd fa fa fa fd fd fa fa
+  0x200ff51c00f0: fa fa fd fd fd fa fa fa fd fa fa fa fa fa fd fd
+  0x200ff51c0100: fa fa fa fa fd fd fd fa fa fa fd fd fa fa fa fa
+  0x200ff51c0110: fd fd fd fa fa fa fd fd fa fa fa fa fd fd fd fa
+  0x200ff51c0120: fa fa fd fd fa fa fa fa fd fd fd fa fa fa 00 00
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+  Shadow gap:              cc
+==14140==ABORTING
 ```
 
-읽어보면:
+핵심만 짚으면:
 
-- write 주소: `0xffffa8e006cf`
-- 할당 영역: `[0xffffa8e006d0, 0xffffa8e006d1)` — 정확히 1바이트
-- write 위치는 영역 시작보다 1바이트 앞 → "1 bytes to the left of 1-byte region"
-- write의 콜스택은 `:208`, allocation의 콜스택은 `:195`
-
-코드 분석과 정확히 일치한다.
+- write 주소 `0xffffa8e006cf`, 할당 영역 `[0xffffa8e006d0, 0xffffa8e006d1)` — **딱 1바이트**, write는 영역 시작보다 정확히 1바이트 앞
+- write의 콜스택은 `rtspdec.c:208`, allocation의 콜스택은 `rtspdec.c:195` — 코드 분석과 정확히 일치
+- shadow map의 화살표(`=>`) 줄을 보면 buggy address의 shadow 바이트는 `[fa]` (heap left redzone)이고, 그 바로 다음이 `01` (partially addressable — 1바이트 할당의 표식). 정확히 "1바이트 할당의 redzone 영역에 1바이트 write" 그림
 
 ## Valgrind 결과
 

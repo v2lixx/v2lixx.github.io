@@ -1,5 +1,6 @@
 [
   {
+    "number": 1,
     "slug": "ffmpeg-rtspdec-announce-underflow",
     "title": "avformat/rtspdec: 1-byte heap-buffer-underflow in rtsp_read_announce",
     "date": "2026-04-15",
