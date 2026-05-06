@@ -12,7 +12,14 @@ FFmpeg는 거의 모든 컨테이너·코덱·프로토콜을 다 다루는, 멀
 /* 97 */     { "listen", "wait for incoming connections", 0, AV_OPT_TYPE_CONST, {.i64 = RTSP_FLAG_LISTEN}, 0, 0, DEC, .unit = "rtsp_flags" },
 ```
 
-ffmpeg가 RTSP 클라이언트로 동작하는 흔한 케이스 말고, 반대로 **서버처럼 동작하면서 클라이언트의 요청을 받는** 모드다. 
+
+**RTSP란?**
+
+RTSP는 IP 카메라나 미디어 서버 같은 데서 스트림 세션을 제어하기 위한 텍스트 기반 프로토콜이다.
+HTTP처럼 `DESCRIBE`, `SETUP`, `PLAY`, `ANNOUNCE`, `TEARDOWN` 같은 method를 클라이언트가 서버에 던지는 구조다.
+
+ffmpeg는 보통 RTSP **클라이언트** 쪽으로 동작한다 — 외부 RTSP 서버에 붙어서 스트림을 받아오는 게 흔한 케이스.
+그런데 이 옵션을 켜면 반대로 **ffmpeg 자체가 서버 노릇을 하면서 클라이언트의 요청을 받는** 모드가 된다.
 미디어 게이트웨이나 recording proxy 시나리오에서 쓰인다. 
 그러면 이 모드에선 클라가 보낸 메시지를 어떻게 파싱하는지가 궁금해져서, `rtsp_listen()`과 그 안에서 호출되는 `rtsp_read_announce()`로 들어가서 알아보게 됐다. 
 거기서 `Content-Length`를 처리하는 한 줄을 보다가 한 군데가 좀 이상해 보였다.
@@ -85,10 +92,10 @@ aarch64 Linux는 LP64라서 `int`는 32-bit, `long`은 64-bit.
 `Content-Length` 파싱은 `libavformat/rtsp.c`의 `ff_rtsp_parse_line()`에서 일어나고, 결과는 `RTSPMessageHeader.content_length` 필드에 들어간다.
 
 ```c
-/* libavformat/rtsp.h — RTSPMessageHeader (발췌) */
+/* libavformat/rtsp.h — RTSPMessageHeader */
 /* 130 */     /** length of the data following this header */
 /* 131 */     int content_length;
-              /* ... 같은 libavformat 안, rtsp.c의 ff_rtsp_parse_line(): ... */
+/* ... */
 /* 1147 */     } else if (av_stristart(p, "Content-Length:", &p)) {
 /* 1148 */         reply->content_length = strtol(p, NULL, 10);
 ```
@@ -107,11 +114,11 @@ aarch64 Linux는 LP64라서 `int`는 32-bit, `long`은 64-bit.
 `libavutil/mem.c`의 구현을 보면 답이 나온다.
 
 ```c
-/* libavutil/mem.c — av_malloc (발췌) */
+/* libavutil/mem.c — av_malloc */
 /* 106 */     if (size) //OS X on SDK 10.6 has a broken posix_memalign implementation
 /* 107 */     if (posix_memalign(&ptr, ALIGN, size))
 /* 108 */         ptr = NULL;
-              /* ... */
+/* ... */
 /* 144 */     if(!ptr && !size) {
 /* 145 */         size = 1;
 /* 146 */         ptr= av_malloc(1);
