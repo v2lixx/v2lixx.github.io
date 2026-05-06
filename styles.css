@@ -919,7 +919,7 @@ footer.foot {
 /* Line-number gutter inside code blocks (post-processed from /* NNN */ comments) */
 .blog-post pre .ln {
     display: inline-block;
-    min-width: 2.5em;
+    min-width: 3.2em;       /* fits 3- and 4-digit numbers in the same code block */
     margin-right: 0.75em;
     text-align: right;
     color: var(--muted);

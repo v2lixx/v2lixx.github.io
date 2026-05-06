@@ -85,15 +85,12 @@ aarch64 Linux는 LP64라서 `int`는 32-bit, `long`은 64-bit.
 `Content-Length` 파싱은 `libavformat/rtsp.c`의 `ff_rtsp_parse_line()`에서 일어나고, 결과는 `RTSPMessageHeader.content_length` 필드에 들어간다.
 
 ```c
-/* libavformat/rtsp.c — ff_rtsp_parse_line (발췌) */
-/* 1147 */     } else if (av_stristart(p, "Content-Length:", &p)) {
-/* 1148 */         reply->content_length = strtol(p, NULL, 10);
-```
-
-```c
 /* libavformat/rtsp.h — RTSPMessageHeader (발췌) */
 /* 130 */     /** length of the data following this header */
 /* 131 */     int content_length;
+              /* ... 같은 libavformat 안, rtsp.c의 ff_rtsp_parse_line(): ... */
+/* 1147 */     } else if (av_stristart(p, "Content-Length:", &p)) {
+/* 1148 */         reply->content_length = strtol(p, NULL, 10);
 ```
 
 `strtol`이 돌려준 `long`이 곧장 `int` 필드에 대입되는 구조다.

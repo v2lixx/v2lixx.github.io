@@ -34,7 +34,7 @@
         <div class="wrap">
             <div class="terminal-prompt">
                 <span class="prompt-user">v2lixx</span><span class="prompt-at">@</span><span class="prompt-host">ubuntu</span><span class="prompt-colon">:</span><span class="prompt-path">~/research</span><span class="prompt-dollar">$</span>
-                <span class="prompt-cmd" id="post-cmd">cat post.md</span>
+                <span class="prompt-cmd" id="post-cmd" data-typewriter="manual"></span>
             </div>
             <p class="post-back-link"><a href="research.html">← all research</a></p>
             <div class="post-meta" id="post-meta"></div>
@@ -86,8 +86,8 @@
             return;
         }
 
-        // placeholder until metadata loads (gets overwritten with post<N>.md once meta arrives)
-        if (cmdEl) cmdEl.textContent = 'cat post.md';
+        // cmdEl starts empty — populated after meta loads (and animated by manual typewriter below).
+        // main.js's auto typewriter is skipped because of data-typewriter="manual".
 
         // configure marked + highlight.js
         if (window.marked && window.hljs) {
@@ -128,7 +128,22 @@
 
             if (meta) {
                 if (cmdEl && meta.number != null) {
-                    cmdEl.textContent = 'cat post' + meta.number + '.md';
+                    var finalCmd = 'cat post' + meta.number + '.md';
+                    // manual typewriter (main.js skipped this element to avoid race)
+                    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                        cmdEl.textContent = finalCmd;
+                    } else {
+                        cmdEl.textContent = '';
+                        var ti = 0;
+                        var ttick = function () {
+                            cmdEl.textContent = finalCmd.slice(0, ti);
+                            ti += 1;
+                            if (ti <= finalCmd.length) {
+                                setTimeout(ttick, 70 + Math.random() * 50);
+                            }
+                        };
+                        setTimeout(ttick, 120);
+                    }
                 }
                 if (meta.title) headTitleEl.textContent = meta.title + ' · v2lixx';
                 var bits = [];

@@ -45,9 +45,16 @@
         }
     }
 
-    /* ----- typewriter on the hero command -------------------- */
+    /* ----- typewriter on the hero command --------------------
+     * Skipped if cmdEl has [data-typewriter] attribute — pages
+     * that load the prompt async (post.html) handle their own
+     * typewriter manually after the text is ready, so this auto
+     * pass would race with the placeholder.
+     */
     const cmdEl = document.querySelector('.terminal-prompt .prompt-cmd');
-    if (cmdEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (cmdEl
+        && !cmdEl.hasAttribute('data-typewriter')
+        && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         const text = cmdEl.textContent;
         cmdEl.textContent = '';
         let i = 0;
