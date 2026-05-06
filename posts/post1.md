@@ -140,12 +140,11 @@ aarch64 Linux는 LP64라서 `int`는 32-bit, `long`은 64-bit.
 
 `sdp[request.content_length]`는 결국 `sdp[-1]`.
 `sdp`가 가리키는 1바이트 영역의 **시작 주소 직전 1바이트**에 NUL이 박힌다.
-이게 1-byte heap-buffer-underflow다.
+1-byte heap-buffer-underflow다.
 
 ## PoC
 
-별도 미디어 파일은 필요 없다.
-RTSP `ANNOUNCE` 요청 한 번이 전부.
+별도 미디어 파일은 필요 없고 RTSP `ANNOUNCE` 요청 한 번으로 트리거 할 수 있다.
 
 ```python
 #!/usr/bin/env python3
