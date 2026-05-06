@@ -35,8 +35,6 @@
                 <span class="prompt-user">v2lixx</span><span class="prompt-at">@</span><span class="prompt-host">ubuntu</span><span class="prompt-colon">:</span><span class="prompt-path">~/research</span><span class="prompt-dollar">$</span>
                 <span class="prompt-cmd">ls -lt posts/</span>
             </div>
-            <h1 class="page-title">Research</h1>
-            <p class="page-sub">Writeups for publicly disclosed vulnerabilities — root cause, repro, and fix.</p>
         </div>
     </header>
 
@@ -88,7 +86,6 @@
                 var html = posts.map(function (p) {
                     var sevClass = 'sev ' + (p.severity || 'low');
                     var sevLabel = (p.severity || '').replace(/^./, function (c) { return c.toUpperCase(); });
-                    var summary = p.summary ? '<p class="post-summary">' + escapeHTML(p.summary) + '</p>' : '';
                     var vendorChip = p.vendor ? '<span class="post-vendor">' + escapeHTML(p.vendor) + '</span>' : '';
                     var sevChip = sevLabel ? '<span class="' + escapeHTML(sevClass) + '">' + escapeHTML(sevLabel) + '</span>' : '';
                     return (
@@ -97,7 +94,6 @@
                             '<div class="post-body">' +
                                 '<a class="post-link" href="post.html?id=' + encodeURIComponent(p.slug) + '">' + escapeHTML(p.title) + '</a>' +
                                 '<div class="post-meta-row">' + vendorChip + sevChip + '</div>' +
-                                summary +
                             '</div>' +
                         '</li>'
                     );
