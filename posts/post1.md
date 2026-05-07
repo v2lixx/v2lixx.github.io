@@ -24,6 +24,8 @@ ffmpeg는 보통 RTSP **클라이언트** 쪽으로 동작한다 — 외부 RTSP
 그러면 이 모드에선 클라이언트가 보낸 메시지를 어떻게 파싱하는지가 궁금해져서, `rtsp_listen()`과 그 안에서 호출되는 `rtsp_read_announce()`로 들어가서 알아보게 됐다. 
 거기서 `Content-Length`를 처리하는 한 줄이 꼬롬한 것을 발견했다.
 
+분석은 FFmpeg `N-123885-g283faf55f8` (커밋 `283faf55f8`), Linux aarch64 + debug · ASan 빌드 기준으로 진행했다.
+
 ## 취약한 코드
 
 `libavformat/rtspdec.c`의 `rtsp_read_announce()` 전체.

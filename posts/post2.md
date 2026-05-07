@@ -1,8 +1,8 @@
 # `libavcodec/rasc`: Heap use-after-free in `decode_move`
 
-저번 글의 rtspdec 건이 코드 정독으로 잡은 케이스였다면, 이번 RASC 건은 fuzzing이 잡아준 거다.
-`libavcodec`의 비교적 사용자가 적을 법한 코덱들 위주로 AFL 하네스를 만들어 돌리고 있었는데, 어느 날 RASC 디코더에서 heap use-after-free가 떨어졌다.
-ASan 트레이스가 깔끔해서 루트 코즈 따라가기도 어렵지 않았다.
+저번 글의 rtspdec 건이 코드 정독으로 잡은 케이스였다면, 이번 RASC 건은 fuzzing으로 잡혔다.
+`libavcodec`의 비교적 사용자가 적을 법한 코덱들 위주로 AFL 하네스를 만들어 돌리고 있었는데, 갑자기 RASC 디코더에서 heap uaf가 나왔다.
+ASan 트레이스가 깔끔해서 Root Cause 따라가기도 어렵지 않았다.
 
 **RASC란?**
 
@@ -10,6 +10,8 @@ RASC는 화면 녹화/리플레이 도구가 쓰는 비디오 코덱이다.
 AVI 컨테이너 안에 video stream으로 담기고, FFmpeg에선 `libavcodec/rasc.c`에 구현돼 있으며 default로 enabled — AVI 파일이 들어오면 `avformat_open_input` → demux → decode 흐름에서 자동으로 닿는다.
 스트림은 INIT / MOVE / DLTA / KFRM 같은 chunk들로 구성되고, 디코더가 chunk type 별로 분기한다 (`decode_fint`, `decode_move`, `decode_dlta`, `decode_kfrm`).
 이번 버그는 그중 `decode_move()` 안에 있다.
+
+분석은 FFmpeg git HEAD (커밋 `78da965`, master 브랜치) + ASan 빌드 기준으로 진행했다.
 
 ## 취약 코드
 
