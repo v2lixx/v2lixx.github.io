@@ -1,11 +1,10 @@
 # `libavcodec/rasc`: Heap Use-After-Free in `decode_move`
 
-저번 글의 rtspdec 건이 코드 정독으로 잡은 케이스였다면, 이번 RASC 건은 fuzzing이 잡아준 케이스다.
-이번 글은 추적 순서를 그대로 따라간다 — 퍼저가 뱉은 ASan 크래시에서 시작해서, 콜스택 세 개를 풀고, 그 라인들로 코드를 거꾸로 짚어가며 루트 코즈를 잡아내는 흐름.
+FFmpeg `libavcodec`의 비교적 사용자가 적을 법한 코덱들에 AFL 퍼징을 돌려보다가 RASC 디코더에서 heap use-after-free가 잡혔다.
 
 분석은 FFmpeg git HEAD (커밋 `78da965`, master 브랜치) + ASan 빌드 기준으로 진행했다.
 
-## 퍼저 셋업
+## Setting Fuzzer
 
 `libavcodec`의 비교적 사용자가 적을 법한 코덱들 위주로 AFL 하네스를 돌리고 있었다.
 FFmpeg 트리에는 `tools/` 아래에 codec별 raw decoder fuzzer 타깃이 있어서, 이를 ASan + UBSan으로 빌드해 stdin으로 입력을 받는 deferred forkserver 모드로 실행할 수 있다.
@@ -19,7 +18,7 @@ cat input.bin | ./tools/afl_raw_dec_rasc_fuzzer
 afl-fuzz -i seeds -o out -- ./tools/afl_raw_dec_rasc_fuzzer
 ```
 
-여러 codec 동시에 돌리던 와중에 RASC 디코더에서 heap use-after-free가 잡혔다.
+여러 codec들을 동시에 돌리던 와중에 RASC 디코더에서 heap use-after-free가 잡혔다.
 
 ## 크래시
 
@@ -54,9 +53,6 @@ previously allocated by thread T0 here:
 
 SUMMARY: AddressSanitizer: heap-use-after-free bytestream.h:94 in bytestream_get_le16
 ```
-
-처음 보는 시점에선 PoC도 없고 트리거 조건도 모르는 상태다.
-ASan이 알려준 세 개의 콜스택(현재 access / 직전 free / 최초 alloc)이 유일한 단서다.
 
 ## 콜스택 추적
 
@@ -140,14 +136,12 @@ av_mallocz / fast_malloc  →  av_fast_padded_malloc  →  decode_zlib  rasc.c:1
 /* 312 */             }
 ```
 
-이제 흐름이 보인다.
-
 - **라인 230 → 188**: `decode_zlib` 호출 → 그 안의 `av_fast_padded_malloc(&s->delta, ...)` 으로 134바이트 영역을 할당, `s->delta`가 이를 가리킴.
 - **라인 235**: `bytestream2_init(&mc, s->delta, ...)` — 로컬 iterator `mc`의 buffer 포인터가 `s->delta`(= 그 134바이트)를 가리키도록 박힘.
 - **라인 249-261**: for 루프 안에서 `mc`로 16바이트씩 (le16 7번 + skip 2) 소비.
 - **라인 296-302**: `type == 0` 분기에서 `av_fast_padded_malloc(&s->delta, ..., w*h*s->bpp)` — `s->delta`를 free하고 새로 할당.
 
-마지막 줄이 사고의 원천.
+마지막 줄이 원인이다.
 `av_fast_padded_malloc()`는 요청 사이즈가 현재 할당보다 크면 기존 영역을 free하고 새로 할당하는 헬퍼다.
 라인 299에서 호출되는 순간, 라인 188이 잡아둔 134바이트가 free된다.
 하지만 `mc`는 라인 235에서 이미 `s->delta`(즉 free된 그 영역)를 가리키도록 박혀 있고, 라인 299의 free는 `mc`를 건드리지 않는다 — `mc`는 dangling이 된다.
@@ -156,8 +150,7 @@ av_mallocz / fast_malloc  →  av_fast_padded_malloc  →  decode_zlib  rasc.c:1
 다음 iteration이 라인 254부터 다시 `bytestream2_get_le16(&mc)` 7번 + `skip 2` 1번 = 16바이트를 freed 영역에서 읽는다.
 이게 ASan이 잡은 그 read — `0x611000000550`는 freed 영역의 시작(`0x611000000540`)으로부터 16바이트 위치, 정확히 첫 iteration이 16바이트 소비한 다음 자리.
 
-설령 라인 299의 새 할당이 우연히 같은 주소로 떨어진다 해도 사고가 끝난 게 아니다.
-새 `s->delta`는 라인 304-307에서 픽셀 복사용 scratch buffer로 즉시 덮어쓰여서, 다음 iteration의 `mc`는 픽셀 데이터를 move-table 필드로 해석하게 된다.
+설령 라인 299의 새 할당이 우연히 같은 주소로 떨어진다 해도 새 `s->delta`는 라인 304-307에서 픽셀 복사용 scratch buffer로 즉시 덮어쓰여서, 다음 iteration의 `mc`는 픽셀 데이터를 move-table 필드로 해석하게 된다.
 
 **트리거 조건 정리:**
 
@@ -172,7 +165,7 @@ av_mallocz / fast_malloc  →  av_fast_padded_malloc  →  decode_zlib  rasc.c:1
 
 ## 최소 PoC
 
-위 트리거 조건만 만족하면 되니까, 그 조건에 맞춰 가장 짧은 형태의 RASC 페이로드를 직접 짰다 — 131바이트.
+위 트리거 조건만 만족하면 되니까, 그 조건에 맞춰 최소한의 RASC 페이로드를 짰다.
 
 ```python
 import zlib, struct
