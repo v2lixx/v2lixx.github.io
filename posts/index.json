@@ -1,5 +1,16 @@
 [
   {
+    "number": 2,
+    "slug": "post2",
+    "title": "libavcodec/rasc: Heap use-after-free in decode_move",
+    "date": "2026-05-07",
+    "vendor": "FFmpeg",
+    "severity": "high",
+    "summary": "decode_move keeps a GetByteContext pointing into s->delta; a type-0 move replaces s->delta via av_fast_padded_malloc, so subsequent loop iterations read move-table fields out of the freed region — heap UAF read of attacker-controlled bytes.",
+    "pr": "https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls/22992",
+    "cve": null
+  },
+  {
     "number": 1,
     "slug": "post1",
     "title": "avformat/rtspdec: Heap-buffer-underflow in rtsp_read_announce",
