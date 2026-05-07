@@ -190,7 +190,7 @@ if __name__ == "__main__":
 구성을 짚어보면:
 
 - `--value` — RTSP 요청의 `Content-Length` 헤더로 들어가는 값. 기본값 `4294967295` (= 2³² − 1).
-- `--body` — TCP 본문에 같이 실어 보낼 페이로드. 기본값 `v=0\r\n` 은 RFC 4566 SDP의 첫 줄(`v=` 버전 선언)이다. 다만 underflow는 ffmpeg가 본문을 실제로 파싱하기 전 단계에서 터지기 때문에 본문 내용 자체는 트리거에 영향이 없고, 형식상 SDP 한 줄을 넣어둔 것일 뿐이다.
+- `--body` — TCP 본문에 같이 실어 보낼 페이로드. `v=0\r\n` 은 기본값으로 SDP 형식용이고, underflow는 ffmpeg가 본문을 실제로 파싱하기 전 단계에서 터지기 때문에 본문 내용 자체는 트리거에 영향이 없다.
 - 요청 조립은 별도 RTSP 클라이언트 라이브러리 없이 socket으로 raw RTSP 평문을 직접 만든다. 메서드 `ANNOUNCE`에 필수 헤더 세 개(`CSeq`, `Content-Type: application/sdp`, `Content-Length`)만 채우면 ffmpeg의 listen-mode ANNOUNCE 분기에 정상 진입한다.
 - 진짜 트리거는 `Content-Length: {args.value}` 한 줄. 나머지 헤더와 본문은 그 분기를 타고 라인 208까지 도달하기 위한 장식일 뿐이다.
 
