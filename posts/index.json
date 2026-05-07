@@ -2,7 +2,7 @@
   {
     "number": 2,
     "slug": "post2",
-    "title": "libavcodec/rasc: Heap use-after-free in decode_move",
+    "title": "libavcodec/rasc: Heap Use-After-Free in decode_move",
     "date": "2026-05-07",
     "vendor": "FFmpeg",
     "severity": "high",
@@ -13,7 +13,7 @@
   {
     "number": 1,
     "slug": "post1",
-    "title": "avformat/rtspdec: Heap-buffer-underflow in rtsp_read_announce",
+    "title": "avformat/rtspdec: Heap Buffer Underflow in rtsp_read_announce",
     "date": "2026-05-06",
     "vendor": "FFmpeg",
     "severity": "medium",

@@ -103,7 +103,7 @@
                                 <span class="sev medium">Medium</span>
                             </div>
                             <div class="vuln-body">
-                                <h4 class="vuln-title">avformat/rtspdec: Heap-buffer-underflow in rtsp_read_announce</h4>
+                                <h4 class="vuln-title">avformat/rtspdec: Heap Buffer Underflow in rtsp_read_announce</h4>
                                 <p class="vuln-desc">In RTSP listen mode, an oversized <code>Content-Length</code> wrapped to <code>-1</code> after being parsed as <code>int</code>; the path then fell through to <code>av_malloc(0)</code>'s 1-byte fallback and wrote a NUL at <code>sdp[-1]</code> — a 1-byte heap-buffer-underflow.</p>
                                 <p class="vuln-meta-row">
                                     <a class="vuln-link" href="https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls/22902" target="_blank" rel="noopener">PR #22902 ↗</a>
@@ -117,7 +117,7 @@
                                 <span class="sev high">High</span>
                             </div>
                             <div class="vuln-body">
-                                <h4 class="vuln-title">libavcodec/rasc: heap use-after-free in the RASC decoder</h4>
+                                <h4 class="vuln-title">libavcodec/rasc: Heap Use-After-Free in decode_move</h4>
                                 <p class="vuln-desc">In <code>decode_move()</code>, a <code>GetByteContext</code> indexes into <code>s->delta</code>; a type-0 move replaces that buffer via <code>av_fast_padded_malloc</code>, so subsequent loop iterations read move-table fields out of the freed region — heap UAF read of attacker-controlled bytes.</p>
                                 <p class="vuln-meta-row">
                                     <a class="vuln-link" href="https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls/22992" target="_blank" rel="noopener">PR #22992 ↗</a>
