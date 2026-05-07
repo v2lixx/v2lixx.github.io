@@ -1,4 +1,4 @@
-# `libavcodec/rasc`: Heap use-after-free in `decode_move`
+# `libavcodec/rasc`: Heap Use-After-Free in `decode_move`
 
 저번 글의 rtspdec 건이 코드 정독으로 잡은 케이스였다면, 이번 RASC 건은 fuzzing으로 잡혔다.
 `libavcodec`의 비교적 사용자가 적을 법한 코덱들 위주로 AFL 하네스를 만들어 돌리고 있었는데, 갑자기 RASC 디코더에서 heap uaf가 나왔다.
