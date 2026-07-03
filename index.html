@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seung Min Shin · Security Researcher</title>
     <meta name="description" content="Seung Min Shin — Security Researcher. Vulnerability research with a current focus on Linux open-source packages and the kernel.">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=research-nav">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -21,7 +21,14 @@
             <ul class="nav-links">
                 <li><a href="#about">about</a></li>
                 <li><a href="#vulns">vulns</a></li>
-                <li><a href="research.html">research</a></li>
+                <li class="nav-item has-submenu">
+                    <a href="research.html">research</a>
+                    <ul class="submenu" aria-label="Research sections">
+                        <li><a href="research.html">0-day</a></li>
+                        <li><a href="research-1day.html">1-day</a></li>
+                        <li><a href="research-wargame-ctf.html">wargame/ctf</a></li>
+                    </ul>
+                </li>
                 <li><a href="#contact">contact</a></li>
                 <li><button class="toggle-btn" id="crt-toggle" aria-label="Toggle CRT scanline">crt</button></li>
                 <li><button class="toggle-btn" id="theme-toggle" aria-label="Toggle theme">dark</button></li>

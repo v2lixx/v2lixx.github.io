@@ -174,6 +174,7 @@ code {
     font-size: 14px;
     align-items: center;
 }
+.nav-links > li { position: relative; }
 .nav-links a {
     text-decoration: none;
     color: var(--muted);
@@ -186,6 +187,54 @@ code {
 }
 .nav-links a:hover { color: var(--fg-strong); }
 .nav-links a:hover::before { color: var(--accent); }
+
+.nav-links .submenu {
+    list-style: none;
+    margin: 0;
+    padding: 8px 0;
+    position: absolute;
+    top: calc(100% + 10px);
+    left: -12px;
+    min-width: 158px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+    z-index: 30;
+}
+.nav-links .submenu::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -11px;
+    height: 11px;
+}
+.nav-links .has-submenu:hover .submenu,
+.nav-links .has-submenu:focus-within .submenu {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+.nav-links .submenu a {
+    display: block;
+    padding: 6px 12px;
+    white-space: nowrap;
+}
+.nav-links .submenu a::before {
+    content: "$";
+    color: var(--accent-dim);
+    margin-right: 7px;
+}
+.nav-links .submenu a:hover::before,
+.nav-links .submenu a.active::before {
+    color: var(--accent);
+}
 
 .toggle-btn {
     background: transparent;
@@ -665,7 +714,35 @@ footer.foot {
         align-items: flex-start;
         gap: 12px;
     }
-    .nav-links { flex-wrap: wrap; gap: 14px; }
+    .nav-links {
+        flex-wrap: wrap;
+        gap: 14px;
+        align-items: flex-start;
+    }
+    .nav-links .has-submenu {
+        width: 100%;
+    }
+    .nav-links .submenu {
+        position: static;
+        min-width: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+        padding: 4px 0 0 14px;
+        background: transparent;
+        border: 0;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: none;
+        transition: none;
+    }
+    .nav-links .submenu::before {
+        display: none;
+    }
+    .nav-links .submenu a {
+        padding: 0;
+    }
     .intro-row { flex-direction: column; gap: 18px; }
     .avatar { width: 76px; height: 76px; }
     .avatar-text { font-size: 22px; }

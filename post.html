@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="head-title">Post · v2lixx</title>
     <meta name="description" content="Vulnerability writeup by Seung Min Shin (@v2lixx).">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=research-nav">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +22,14 @@
             <ul class="nav-links">
                 <li><a href="index.html#about">about</a></li>
                 <li><a href="index.html#vulns">vulns</a></li>
-                <li><a href="research.html" class="active">research</a></li>
+                <li class="nav-item has-submenu">
+                    <a href="research.html" class="active">research</a>
+                    <ul class="submenu" aria-label="Research sections">
+                        <li><a href="research.html" class="active">0-day</a></li>
+                        <li><a href="research-1day.html">1-day</a></li>
+                        <li><a href="research-wargame-ctf.html">wargame/ctf</a></li>
+                    </ul>
+                </li>
                 <li><a href="index.html#contact">contact</a></li>
                 <li><button class="toggle-btn" id="crt-toggle" aria-label="Toggle CRT scanline">crt</button></li>
                 <li><button class="toggle-btn" id="theme-toggle" aria-label="Toggle theme">dark</button></li>
@@ -33,10 +40,10 @@
     <header class="intro post-intro">
         <div class="wrap">
             <div class="terminal-prompt">
-                <span class="prompt-user">v2lixx</span><span class="prompt-at">@</span><span class="prompt-host">ubuntu</span><span class="prompt-colon">:</span><span class="prompt-path">~/research</span><span class="prompt-dollar">$</span>
+                <span class="prompt-user">v2lixx</span><span class="prompt-at">@</span><span class="prompt-host">ubuntu</span><span class="prompt-colon">:</span><span class="prompt-path" id="post-path">~/research/0-day</span><span class="prompt-dollar">$</span>
                 <span class="prompt-cmd" id="post-cmd" data-typewriter="manual"></span>
             </div>
-            <p class="post-back-link"><a href="research.html">← all research</a></p>
+            <p class="post-back-link"><a href="research.html" data-research-back>← 0-day research</a></p>
             <div class="post-meta" id="post-meta"></div>
         </div>
     </header>
@@ -46,7 +53,7 @@
             <article class="blog-post" id="post-body">
                 <p class="post-loading">loading…</p>
             </article>
-            <p class="post-back-link post-back-bottom"><a href="research.html">← all research</a></p>
+            <p class="post-back-link post-back-bottom"><a href="research.html" data-research-back>← 0-day research</a></p>
         </div>
     </section>
 
@@ -75,7 +82,26 @@
         var bodyEl = document.getElementById('post-body');
         var metaEl = document.getElementById('post-meta');
         var cmdEl  = document.getElementById('post-cmd');
+        var pathEl = document.getElementById('post-path');
         var headTitleEl = document.getElementById('head-title');
+        var categoryRoutes = {
+            '0-day': { href: 'research.html', label: '0-day research', path: '~/research/0-day' },
+            '1-day': { href: 'research-1day.html', label: '1-day research', path: '~/research/1-day' },
+            'wargame/ctf': { href: 'research-wargame-ctf.html', label: 'wargame/ctf', path: '~/research/wargame-ctf' }
+        };
+
+        function setBackLinks(category) {
+            var route = categoryRoutes[category] || categoryRoutes['0-day'];
+            if (pathEl) pathEl.textContent = route.path;
+            document.querySelectorAll('[data-research-back]').forEach(function (a) {
+                a.setAttribute('href', route.href);
+                a.textContent = '← ' + route.label;
+            });
+            document.querySelectorAll('.nav-links .submenu a').forEach(function (a) {
+                if (a.getAttribute('href') === route.href) a.classList.add('active');
+                else a.classList.remove('active');
+            });
+        }
 
         var params = new URLSearchParams(location.search);
         var slug = params.get('id') || '';
@@ -127,6 +153,7 @@
             }
 
             if (meta) {
+                setBackLinks(meta.category || '0-day');
                 if (cmdEl && meta.number != null) {
                     var finalCmd = 'cat post' + meta.number + '.md';
                     // manual typewriter (main.js skipped this element to avoid race)
