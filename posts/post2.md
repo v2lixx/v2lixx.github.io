@@ -1,5 +1,7 @@
 # `libavcodec/rasc`: Heap Use-After-Free in `decode_move`
 
+> CVE: [CVE-2026-12706](https://www.cve.org/CVERecord?id=CVE-2026-12706)
+
 FFmpeg `libavcodec`의 비교적 사용자가 적을 법한 코덱들에 AFL 퍼징을 돌려보다가 RASC 디코더에서 heap use-after-free가 잡혔다.
 
 분석은 FFmpeg git HEAD (커밋 `78da965`, master 브랜치) + ASan 빌드 기준으로 진행했다.
