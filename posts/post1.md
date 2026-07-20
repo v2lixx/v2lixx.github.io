@@ -1,5 +1,7 @@
 # `avformat/rtspdec`: Heap Buffer Underflow in `rtsp_read_announce`
 
+> CVE: [CVE-2026-51580](https://www.cve.org/CVERecord?id=CVE-2026-51580)
+
 FFmpeg는 거의 모든 컨테이너·코덱·프로토콜을 다 다루는, 멀티미디어 분야에서 사실상 표준에 가까운 오픈소스 라이브러리다.
 클라이언트 단말뿐 아니라 서버·게이트웨이·트랜스코더·녹화 파이프라인에 광범위하게 박혀 있어서 외부 노출 면적이 상당히 넓다.
 
@@ -408,4 +410,3 @@ ASan 없는 별도 debug 빌드에서 Memcheck로도 돌렸다.
 
 else 분기(원래는 "Content-Length header value exceeds sdp allocated buffer (4KB)"라는 약간 부정확한 에러를 뱉던 자리)의 메시지와 반환 코드도 같이 정리됐다.
 `AVERROR(EIO)` → `AVERROR_INVALIDDATA`로 의미를 맞추고, 로그에는 잘못된 실제 값(`%d`)을 그대로 출력하도록 바꿨다.
-
