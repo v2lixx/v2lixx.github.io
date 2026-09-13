@@ -152,6 +152,8 @@
                 for (var i = 0; i < posts.length; i++) if (posts[i].slug === slug) { meta = posts[i]; break; }
             }
 
+            if (!meta) throw new Error('post not found.');
+
             if (meta) {
                 setBackLinks(meta.category || '0-day');
                 if (cmdEl && meta.number != null) {

@@ -210,22 +210,6 @@
                     </ul>
                 </div>
 
-                <div class="vendor-block" id="chromium">
-                    <h3 class="vendor-name">Chromium</h3>
-                    <p class="vendor-desc">Open-source web browser project (Chrome's upstream).</p>
-                    <ul class="vuln-list">
-                        <li>
-                            <div class="vuln-meta">
-                                <span class="cve">Credited</span>
-                            </div>
-                            <div class="vuln-body">
-                                <h4 class="vuln-title">Null pointer dereference in <code>SkStrike::glyphIDsToPaths</code></h4>
-                                <p class="vuln-desc"><code>SkStrike::glyphIDsToPaths</code> ignored <code>prepareForPath</code>'s return value, so a compromised renderer sending <code>readStrikeData</code> with <code>hasPath=false</code> could leave a glyph poisoned (sentinel set, path null) and then crash the GPU process by referencing it from a <code>DrawSlugOp</code>.</p>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-
             </div>
         </div>
     </section>
